@@ -13,7 +13,18 @@ export const registerUser=async(req, res)=>{
 
         const sql = 'INSERT INTO users (username, email, password) VALUES (?, ?, ?)';
         const values = [username, email, hashPassword];
+        const checkemail = 'SELECT * FROM users WHERE email = ?';
+        db.query(checkemail,[email],  (error, results, fields) => {
+            if (error) {
+                console.error('Error executing query:', error);
+                return res.status(500).json({ message: 'Error registering user' });
+            }
 
+            if(results.length > 0 ){
+                return res.status(201).json({ message: 'Already exist' });
+            }
+         
+       
         db.query(sql, values, (error, results, fields) => {
             if (error) {
                 console.error('Error executing query:', error);
@@ -22,6 +33,8 @@ export const registerUser=async(req, res)=>{
             console.log('Query results:', results);
             return res.status(200).json({ message: 'Successfully registered' });
         });
+
+    });
     } catch (err) {
         console.error(err);
         return res.status(500).json({ message: 'Internal server error' });
@@ -41,6 +54,9 @@ export const loginUser = async(req, res)=>{
                 return res.status(500).json({ message: 'Error fetching user' });
             }
             try {
+                if(results.length <= 0){
+                    return res.status(500).json({ message: 'Wrong information' });  
+                }
                 const match = await bcrypt.compare(user.password, results[0].password);
                 if (match) {
                     res.status(200).send('Login successful');
